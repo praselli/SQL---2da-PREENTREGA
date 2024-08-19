@@ -389,3 +389,40 @@ y evita que realice actualizaciones o eliminaciones que puedan afectar muchas fi
 
 -- 3 / Cerrar un proyecto:
 -- CALL sp_cerrar_proyecto(1);
+
+
+
+-- --------------------- TRIGGERS: --------------------------
+
+
+-- 1 / Evitar la eliminación de un usuarios con tareas:
+
+DELIMITER $$
+
+CREATE TRIGGER tg_evitar_eliminar_usuario_con_tareas
+BEFORE DELETE ON Usuarios
+FOR EACH ROW
+BEGIN
+    DECLARE num_tareas INT;
+
+    -- Contar el número de tareas asignadas al usuario que se está intentando eliminar
+    SELECT COUNT(*) INTO num_tareas
+    FROM Tareas
+    WHERE id_usuario_asignado = OLD.id_usuario;
+    
+    -- Si el usuario tiene tareas asignadas, cancela la eliminación
+    IF num_tareas > 0 THEN
+        -- Mensaje de error literal
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'No se puede eliminar el usuario porque tiene tareas asignadas.';
+    END IF;
+END$$
+
+DELIMITER ;
+
+
+-- PRUEBA TRIGGER:
+-- Descomentar y ejecutar para poder hacer las pruebas.
+
+-- SELECT * FROM Tareas WHERE id_usuario_asignado = 1;
+-- DELETE FROM Usuarios WHERE id_usuario = 1;
